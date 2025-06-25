@@ -59,7 +59,7 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
 
         // If password is entered, check if we have an active connection
         startDestination = if (passwordEntered) {
-            // We'll always start with splash, it will navigate based on connection check
+            // We\'ll always start with splash, it will navigate based on connection check
             Routes.SPLASH
         } else {
             Routes.SPLASH
@@ -83,7 +83,7 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
 
                 // If password is entered, check connection status
                 if (passwordEntered) {
-                    // If we're already connected, go directly to schedule screen
+                    // If we\'re already connected, go directly to schedule screen
                     // Otherwise, go to devices screen to establish connection
                     val destination = if (connectionStatus == BluetoothStatus.CONNECTED) {
                         Routes.SCHEDULE_SCREEN
@@ -153,8 +153,7 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
                 onSaveSchedule = { newSchedule ->
                     // Add the new schedule to database
                     scheduleViewModel.insert(newSchedule)
-                    // Navigate back to schedule screen
-                    navController.popBackStack()
+                    navController.navigate(Routes.SCHEDULE_SCREEN) { popUpTo(Routes.SCHEDULE_SCREEN) { inclusive = true } }
                 }
             )
         }
@@ -173,8 +172,7 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
                     onSaveSchedule = { updatedSchedule ->
                         // Update the schedule in database
                         scheduleViewModel.update(updatedSchedule)
-                        // Navigate back to schedule screen
-                        navController.popBackStack()
+                        navController.navigate(Routes.SCHEDULE_SCREEN) { popUpTo(Routes.SCHEDULE_SCREEN) { inclusive = true } }
                     }
                 )
             } else {

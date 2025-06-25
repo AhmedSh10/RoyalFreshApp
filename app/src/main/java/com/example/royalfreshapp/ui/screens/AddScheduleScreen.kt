@@ -252,7 +252,6 @@ fun AddScheduleScreen(
                         isOn = scheduleToEdit?.isOn ?: false // Default to OFF for new items
                     )
                     onSaveSchedule(newSchedule)
-                    navController.popBackStack()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
