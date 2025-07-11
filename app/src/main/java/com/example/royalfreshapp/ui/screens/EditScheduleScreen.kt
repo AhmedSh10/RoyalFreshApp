@@ -29,21 +29,21 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddScheduleScreen(
+fun EditScheduleScreen(
     navController: NavController,
     onSaveSchedule: (ScheduleItem) -> Unit,
-    scheduleToEdit: ScheduleItem? = null
+    scheduleToEdit: ScheduleItem
 ) {
     // State for start and end times
-    var startTime by remember { mutableStateOf(scheduleToEdit?.timeRange?.split("-")?.get(0)?.trim() ?: "5:45 PM") }
-    var endTime by remember { mutableStateOf(scheduleToEdit?.timeRange?.split("-")?.get(1)?.trim() ?: "6:30 PM") }
+    var startTime by remember { mutableStateOf(scheduleToEdit.timeRange.split("-")[0].trim()) }
+    var endTime by remember { mutableStateOf(scheduleToEdit.timeRange.split("-")[1].trim()) }
 
     // Context for TimePickerDialog
     val context = LocalContext.current
 
     // Calendar instances for time pickers
-    val startCalendar = remember { Calendar.getInstance() }
-    val endCalendar = remember { Calendar.getInstance() }
+    val startCalendar = remember { Calendar.getInstance().apply { time = SimpleDateFormat("h:mm a", Locale.getDefault()).parse(startTime) ?: time } }
+    val endCalendar = remember { Calendar.getInstance().apply { time = SimpleDateFormat("h:mm a", Locale.getDefault()).parse(endTime) ?: time } }
 
     // Time format
     val timeFormat = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
@@ -78,19 +78,17 @@ fun AddScheduleScreen(
     val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
     val selectedDays = remember {
         mutableStateListOf<String>().apply {
-            if (scheduleToEdit != null) {
-                val frequency = scheduleToEdit.frequency
-                if (frequency == "Every day") {
-                    addAll(days)
-                } else {
-                    addAll(frequency.split(", "))
-                }
+            val frequency = scheduleToEdit.frequency
+            if (frequency == "Every day") {
+                addAll(days)
+            } else {
+                addAll(frequency.split(", "))
             }
         }
     }
 
     // State for selected grade
-    var selectedGrade by remember { mutableStateOf(scheduleToEdit?.grade ?: "") }
+    var selectedGrade by remember { mutableStateOf(scheduleToEdit.grade) }
 
     // Validation state
     val isStartTimeSelected = startTime.isNotEmpty()
@@ -110,7 +108,7 @@ fun AddScheduleScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Schedule",
+                            text = "Edit Schedule",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -244,17 +242,17 @@ fun AddScheduleScreen(
             // Save button
             Button(
                 onClick = {
-                    // Create a new schedule item with the selected values
+                    // Create an updated schedule item with the selected values
                     val timeRange = "$startTime-$endTime"
                     val frequency = if (selectedDays.size == 7) "Every day" else selectedDays.joinToString(", ")
-                    val newSchedule = ScheduleItem(
+                    val updatedSchedule = scheduleToEdit.copy(
                         timeRange = timeRange,
                         frequency = frequency,
                         deviceId = selectedGrade,
-                        grade = selectedGrade, // Pass grade
-                        isOn = scheduleToEdit?.isOn ?: false // Default to OFF for new items
+                        grade = selectedGrade,
+                        isOn = if (scheduleToEdit.isOn) false else scheduleToEdit.isOn // Turn off if it was on
                     )
-                    onSaveSchedule(newSchedule)
+                    onSaveSchedule(updatedSchedule)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -268,7 +266,7 @@ fun AddScheduleScreen(
                 enabled = isFormValid
             ) {
                 Text(
-                    text = "Save",
+                    text = "Save Changes",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -277,6 +275,56 @@ fun AddScheduleScreen(
     }
 }
 
-
+//@Composable
+//fun DaySelectionButton(
+//    day: String,
+//    isSelected: Boolean,
+//    onClick: () -> Unit
+//) {
+//    Box(
+//        modifier = Modifier
+//            .clip(RoundedCornerShape(50))
+//            .background(
+//                if (isSelected) Color(0xFFE91E63).copy(alpha = 0.1f)
+//                else Color(0xFFF5F5F5)
+//            )
+//            .border(
+//                width = if (isSelected) 1.dp else 0.dp,
+//                color = if (isSelected) Color(0xFFE91E63) else Color.Transparent,
+//                shape = RoundedCornerShape(50)
+//            )
+//            .clickable(onClick = onClick)
+//            .padding(horizontal = 8.dp, vertical = 12.dp),
+//        contentAlignment = Alignment.Center
+//    ) {
+//        Text(
+//            text = day,
+//            color = if (isSelected) Color(0xFFE91E63) else Color.Black,
+//            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+//        )
+//    }
+//}
+//
+//@Composable
+//fun GradeSelectionItem(
+//    grade: String,
+//    isSelected: Boolean,
+//    onClick: () -> Unit
+//) {
+//    Box(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .clickable(onClick = onClick)
+//            .padding(vertical = 12.dp),
+//        contentAlignment = Alignment.Center
+//    ) {
+//        Text(
+//            text = grade,
+//            fontSize = 24.sp,
+//            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+//            color = if (isSelected) Color(0xFFE91E63) else Color.Gray
+//        )
+//    }
+//}
 
 

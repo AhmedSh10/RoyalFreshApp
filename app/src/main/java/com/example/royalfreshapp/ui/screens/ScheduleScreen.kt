@@ -1,5 +1,9 @@
 package com.example.royalfreshapp.ui.screens
 
+import android.annotation.SuppressLint
+import android.app.Application
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,13 +28,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.royalfreshapp.RoyalFreshTheme
+import com.example.royalfreshapp.bluetooth.BluetoothViewModel
+
+import com.example.royalfreshapp.utils.TAG
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -40,6 +52,7 @@ data class ScheduleItem(
     val timeRange: String,
     val frequency: String,
     val deviceId: String,
+    val grade: String, // Added grade
     val isOn: Boolean = false // Default to OFF as requested
 )
 
@@ -48,11 +61,15 @@ data class ScheduleItem(
 fun ScheduleScreen(
     navController: NavController,
     scheduleItems: List<ScheduleItem>,
+    bluetoothViewModel: BluetoothViewModel,
     onAddScheduleClick: () -> Unit,
     onEditSchedule: (ScheduleItem) -> Unit,
     onDeleteSchedule: (ScheduleItem) -> Unit,
     onToggleChange: (ScheduleItem, Boolean) -> Unit
 ) {
+    val isBluetoothConnected by bluetoothViewModel.isConnected.collectAsState()
+    val context = LocalContext.current
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -77,6 +94,16 @@ fun ScheduleScreen(
                             contentDescription = "Back"
                         )
                     }
+                },
+                actions = {
+                    // Bluetooth connection indicator
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(if (isBluetoothConnected) Color.Green else Color.Red)
+                            .border(1.dp, Color.White, CircleShape)
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFFE91E63), // Pink color from the image
@@ -134,8 +161,36 @@ fun ScheduleScreen(
                     items(scheduleItems) { item ->
                         CustomSwipeableCard(
                             scheduleItem = item,
-                            onToggleChange = { isOn -> onToggleChange(item, isOn) },
-                            onEditSchedule = { onEditSchedule(item) },
+                            onToggleChange = {
+                                if (isBluetoothConnected) {
+                                    if (item.isOn) {
+                                        // If ON, send 'B' to turn off
+                                        bluetoothViewModel.write("B")
+                                        Toast.makeText(context, "Device turned OFF", Toast.LENGTH_SHORT).show()
+                                        onToggleChange(item, false) // Update UI to OFF
+                                        Log.d(TAG, "Command 'B' sent for schedule item ${item.id} (turned OFF)")
+                                    } else {
+                                        // If OFF, check if any other card is ON
+                                        val isAnyOtherCardOn = scheduleItems.any { it.id != item.id && it.isOn }
+                                        if (isAnyOtherCardOn) {
+                                            Toast.makeText(context, "Another timer is already active. Please turn it off first.", Toast.LENGTH_LONG).show()
+                                            Log.d(TAG, "Attempted to turn ON schedule item ${item.id}, but another card is already ON.")
+                                        } else {
+                                            // If OFF and no other card is ON, send full card data
+                                            val dataToSend = "${item.timeRange}|${item.frequency}|${item.deviceId}|${item.grade}"
+                                            bluetoothViewModel.write(dataToSend)
+                                            // Assuming write is successful, update UI and show success message
+                                            Toast.makeText(context, "Data sent successfully!", Toast.LENGTH_SHORT).show()
+                                            onToggleChange(item, true) // Update UI to ON
+                                            Log.d(TAG, "Full data '$dataToSend' sent for schedule item ${item.id} (turned ON)")
+                                        }
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Bluetooth not connected", Toast.LENGTH_SHORT).show()
+                                    Log.w(TAG, "Attempted to send command but Bluetooth not connected.")
+                                }
+                            },
+                            onEditSchedule = { onEditSchedule(item) }, // Re-enabled edit functionality
                             onDeleteSchedule = { onDeleteSchedule(item) }
                         )
                     }
@@ -153,16 +208,16 @@ fun ScheduleScreen(
 fun CustomSwipeableCard(
     scheduleItem: ScheduleItem,
     onToggleChange: (Boolean) -> Unit,
-    onEditSchedule: () -> Unit,
+    onEditSchedule: () -> Unit, // Re-added edit functionality
     onDeleteSchedule: () -> Unit
 ) {
     val density = LocalDensity.current
     var offsetX by remember { mutableStateOf(0f) }
-    var isDismissed by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     // Thresholds for triggering actions
-    val deleteThreshold = -150f
-    val editThreshold = 150f
+    val deleteThreshold = -150f // Negative for left swipe
+    val editThreshold = 150f // Positive for right swipe
 
     // Animation for background alpha based on swipe distance
     val deleteBackgroundAlpha by animateFloatAsState(
@@ -173,9 +228,27 @@ fun CustomSwipeableCard(
         targetValue = (offsetX / editThreshold).coerceIn(0f, 1f)
     )
 
-    // If card is dismissed, don't show it
-    if (isDismissed) {
-        return
+    // Dialog for delete confirmation
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false; offsetX = 0f },
+            title = { Text("Confirm Deletion") },
+            text = { Text("Are you sure you want to delete this schedule?") },
+            confirmButton = {
+                Button(onClick = {
+                    onDeleteSchedule()
+                    showDeleteDialog = false
+                    Log.d(TAG, "Schedule item ${scheduleItem.id} confirmed for deletion.")
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteDialog = false; offsetX = 0f }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Box(
@@ -183,14 +256,15 @@ fun CustomSwipeableCard(
             .fillMaxWidth()
             .height(130.dp)
     ) {
-        // Delete background (appears when swiping right)
+        // Delete background (appears when swiping left)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(deleteBackgroundAlpha)
                 .background(Color(0xFFF44336)) // Red for delete
-                .padding(horizontal = 20.dp),
-            contentAlignment = Alignment.CenterStart
+                .padding(horizontal = 20.dp)
+                .zIndex(1f), // Ensure background is behind the card but visible
+            contentAlignment = Alignment.CenterEnd // Align to end for left swipe
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,
@@ -199,14 +273,15 @@ fun CustomSwipeableCard(
             )
         }
 
-        // Edit background (appears when swiping left)
+        // Edit background (appears when swiping right)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(editBackgroundAlpha)
                 .background(Color(0xFF2196F3)) // Blue for edit
-                .padding(horizontal = 20.dp),
-            contentAlignment = Alignment.CenterEnd
+                .padding(horizontal = 20.dp)
+                .zIndex(1f), // Ensure background is behind the card but visible
+            contentAlignment = Alignment.CenterStart // Align to start for right swipe
         ) {
             Icon(
                 imageVector = Icons.Default.Edit,
@@ -224,27 +299,26 @@ fun CustomSwipeableCard(
                 .draggable(
                     orientation = Orientation.Horizontal,
                     state = rememberDraggableState { delta ->
-                        // Update offset with drag delta
+                        // Allow both left and right swipe
                         offsetX += delta
                     },
                     onDragStopped = {
                         when {
-                            // Swiped right beyond threshold - Delete
-                            offsetX > editThreshold -> {
-                                // Trigger delete action
-                                onDeleteSchedule()
-                                isDismissed = true
-                            }
-                            // Swiped left beyond threshold - Edit
+                            // Swiped left beyond threshold - Show delete dialog
                             offsetX < deleteThreshold -> {
-                                // Trigger edit action
+                                showDeleteDialog = true
+                                Log.d(TAG, "Schedule item ${scheduleItem.id} swiped for deletion, showing dialog.")
+                            }
+                            // Swiped right beyond threshold - Trigger edit action
+                            offsetX > editThreshold -> {
                                 onEditSchedule()
-                                // Reset position
-                                offsetX = 0f
+                                offsetX = 0f // Reset position after action
+                                Log.d(TAG, "Schedule item ${scheduleItem.id} swiped for editing.")
                             }
                             // Not beyond threshold - Reset position
                             else -> {
                                 offsetX = 0f
+                                Log.d(TAG, "Swipe on schedule item ${scheduleItem.id} reset.")
                             }
                         }
                     }
@@ -291,26 +365,24 @@ fun CustomSwipeableCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Custom toggle switch that looks like the one in the image
-                        val isChecked = remember { mutableStateOf(scheduleItem.isOn) }
-
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
-                                .background(Color.White)
+                                .background(if (scheduleItem.isOn) Color.Green else Color.Red)
                                 .border(
                                     width = 2.dp,
-                                    color = Color(0xFFE91E63),
+                                    color = if (scheduleItem.isOn) Color.Green else Color.Red,
                                     shape = RoundedCornerShape(50)
                                 )
                                 .clickable {
-                                    isChecked.value = !isChecked.value
-                                    onToggleChange(isChecked.value)
+                                    // Only allow toggle if Bluetooth is connected
+                                    onToggleChange(scheduleItem.isOn) // Pass current state to trigger inverse
                                 }
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = if (isChecked.value) "ON" else "OFF",
-                                color = Color(0xFFE91E63),
+                                text = if (scheduleItem.isOn) "ON" else "OFF", // Use scheduleItem.isOn directly
+                                color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -320,3 +392,35 @@ fun CustomSwipeableCard(
         }
     }
 }
+
+
+// --- Preview ---
+@SuppressLint("ViewModelConstructorInComposable")
+@Preview(showBackground = true)
+@Composable
+fun ScheduleScreenPreview() {
+    RoyalFreshTheme {
+        ScheduleScreen(
+            navController = rememberNavController(),
+            scheduleItems = listOf(
+                ScheduleItem(
+                    id = 1,
+                    timeRange = "08:00 - 10:00",
+                    frequency = "Daily",
+                    deviceId = "Device123",
+                    grade = "A",
+                    isOn = false
+                )
+            ),
+            bluetoothViewModel = BluetoothViewModel(application = LocalContext.current.applicationContext as Application),
+            onAddScheduleClick = {},
+            onEditSchedule = {},
+            onDeleteSchedule = {},
+            onToggleChange = { _, _ -> }
+        )
+    }
+}
+
+
+
+

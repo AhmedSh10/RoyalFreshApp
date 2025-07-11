@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +25,9 @@ import androidx.navigation.NavController
 import com.example.royalfreshapp.bluetooth.BluetoothStatus
 import com.example.royalfreshapp.bluetooth.BluetoothViewModel
 import com.example.royalfreshapp.navigation.Routes
+import android.util.Log
+import android.widget.Toast
+import com.example.royalfreshapp.utils.TAG
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("MissingPermission") // Permissions checked in ViewModel
@@ -34,36 +36,44 @@ fun DevicesScreen(
     navController: NavController,
     viewModel: BluetoothViewModel = viewModel()
 ) {
-    val connectionStatus by viewModel.connectionStatus.observeAsState(BluetoothStatus.IDLE)
-    val availableDevices by viewModel.availableDevices.observeAsState(emptyList())
-    val errorMessage by viewModel.errorMessage.observeAsState()
-    val connectedDeviceName by viewModel.connectedDeviceName.observeAsState()
+    val connectionStatus by viewModel.connectionStatus.collectAsState()
+    val availableDevices by viewModel.availableDevices.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val connectedDeviceName by viewModel.connectedDeviceName.collectAsState()
 
     // Effect to initialize Bluetooth when the screen is first composed
     LaunchedEffect(key1 = Unit) {
+        Log.d(TAG, "DevicesScreen: Initializing Bluetooth on screen composition.")
         viewModel.initializeBluetooth()
     }
 
     // Snackbar host state for showing errors and connection success
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     // Show error messages in snackbar
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
-            snackbarHostState.showSnackbar(
-                message = it,
-                duration = SnackbarDuration.Short
-            )
+            Log.e(TAG, "DevicesScreen: Showing error snackbar: $it")
+//            snackbarHostState.showSnackbar(
+//                message = it,
+//                duration = SnackbarDuration.Short
+//            )
+
+            Toast.makeText(navController.context, it, Toast.LENGTH_SHORT).show()
+
         }
     }
-    
+
     // Show connection success message
     LaunchedEffect(connectionStatus) {
         if (connectionStatus == BluetoothStatus.CONNECTED) {
-            snackbarHostState.showSnackbar(
-                message = "Connected successfully to ${connectedDeviceName ?: "device"}",
-                duration = SnackbarDuration.Short
-            )
+            val msg = "Connected successfully to ${connectedDeviceName ?: "device"}"
+            Log.d(TAG, "DevicesScreen: Showing success snackbar: $msg")
+//            snackbarHostState.showSnackbar(
+//                message = msg,
+//                duration = SnackbarDuration.Short
+//            )
+            Toast.makeText(navController.context, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -74,8 +84,11 @@ fun DevicesScreen(
                 title = { Text("Available Devices") },
                 actions = {
                     IconButton(
-                        onClick = { viewModel.scanForPairedDevices() },
-                        enabled = connectionStatus != BluetoothStatus.SCANNING && 
+                        onClick = {
+                            Log.d(TAG, "DevicesScreen: Refresh button clicked.")
+                            viewModel.scanForPairedDevices()
+                        },
+                        enabled = connectionStatus != BluetoothStatus.SCANNING &&
                                 connectionStatus != BluetoothStatus.CONNECTING
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh Devices")
@@ -102,37 +115,37 @@ fun DevicesScreen(
             ) {
                 when (connectionStatus) {
                     BluetoothStatus.IDLE -> Icon(
-                        Icons.Default.Settings, 
-                        contentDescription = "Idle", 
+                        Icons.Default.Settings,
+                        contentDescription = "Idle",
                         tint = LocalContentColor.current.copy(alpha = 0.6f)
                     )
                     BluetoothStatus.SCANNING -> {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp), 
+                            modifier = Modifier.size(20.dp),
                             strokeWidth = 2.dp
                         )
                     }
                     BluetoothStatus.CONNECTING -> CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp), 
+                        modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp
                     )
                     BluetoothStatus.CONNECTED -> Icon(
-                        Icons.Default.Check, 
-                        contentDescription = "Connected", 
+                        Icons.Default.Check,
+                        contentDescription = "Connected",
                         tint = Color(0xFF00C853) // Green color for connected
                     )
                     BluetoothStatus.ERROR -> Icon(
-                        Icons.Default.Warning, 
-                        contentDescription = "Error", 
+                        Icons.Default.Warning,
+                        contentDescription = "Error",
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = when (connectionStatus) {
-                        BluetoothStatus.IDLE -> if (connectedDeviceName != null) 
-                            "Connected to $connectedDeviceName" 
-                        else 
+                        BluetoothStatus.IDLE -> if (connectedDeviceName != null)
+                            "Connected to $connectedDeviceName"
+                        else
                             "Select a device to connect"
                         BluetoothStatus.SCANNING -> "Scanning for paired devices..."
                         BluetoothStatus.CONNECTING -> "Connecting to ${connectedDeviceName ?: "device"}..."
@@ -153,6 +166,7 @@ fun DevicesScreen(
                     CircularProgressIndicator()
                     Text("Scanning...", modifier = Modifier.padding(top = 60.dp))
                 }
+                Log.d(TAG, "DevicesScreen: Showing scanning indicator.")
             } else if (availableDevices.isEmpty() && connectionStatus != BluetoothStatus.SCANNING) {
                 // Show message if no devices found and not scanning
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -163,30 +177,37 @@ fun DevicesScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
+                Log.d(TAG, "DevicesScreen: No paired devices found.")
             } else {
                 // Show the list of devices
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(availableDevices) { device ->
                         DeviceItem(
-                            device = device, 
-                            viewModel = viewModel, 
+                            device = device,
+                            viewModel = viewModel,
                             onClick = {
-                                if (connectionStatus != BluetoothStatus.CONNECTING && 
-                                   connectionStatus != BluetoothStatus.CONNECTED) {
+                                Log.d(TAG, "DevicesScreen: Device item clicked: ${viewModel.getDeviceName(device)}")
+                                if (connectionStatus != BluetoothStatus.CONNECTING &&
+                                    connectionStatus != BluetoothStatus.CONNECTED) {
                                     viewModel.connectToDevice(device)
+                                } else {
+                                    Log.w(TAG, "DevicesScreen: Ignoring device click, already connecting or connected.")
                                 }
                             }
                         )
                     }
                 }
+                Log.d(TAG, "DevicesScreen: Displaying available devices.")
             }
 
             // Next Button (only visible when connected)
             AnimatedVisibility(visible = connectionStatus == BluetoothStatus.CONNECTED) {
                 Button(
-                    onClick = { navController.navigate(Routes.SCHEDULE_SCREEN)
+                    onClick = {
+                        Log.d(TAG, "DevicesScreen: Next button clicked, navigating to ScheduleScreen.")
+                        navController.navigate(Routes.SCHEDULE_SCREEN)
 
-                              },
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp)
@@ -201,8 +222,8 @@ fun DevicesScreen(
 @SuppressLint("MissingPermission") // Permissions checked in ViewModel
 @Composable
 fun DeviceItem(
-    device: BluetoothDevice, 
-    viewModel: BluetoothViewModel, 
+    device: BluetoothDevice,
+    viewModel: BluetoothViewModel,
     onClick: () -> Unit
 ) {
     Card(
@@ -218,8 +239,8 @@ fun DeviceItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                Icons.Default.Info, 
-                contentDescription = "Bluetooth Device", 
+                Icons.Default.Info,
+                contentDescription = "Bluetooth Device",
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -236,3 +257,5 @@ fun DeviceItem(
         }
     }
 }
+
+

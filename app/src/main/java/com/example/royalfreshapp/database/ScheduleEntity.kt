@@ -11,6 +11,7 @@ data class ScheduleEntity(
     val timeRange: String,
     val frequency: String,
     val deviceId: String,
+    val grade: String, // Added grade field
     val isOn: Boolean
 ) {
     // Convert Entity to UI model
@@ -20,10 +21,11 @@ data class ScheduleEntity(
             timeRange = timeRange,
             frequency = frequency,
             deviceId = deviceId,
+            grade = grade, // Pass grade
             isOn = isOn
         )
     }
-    
+
     companion object {
         // Convert UI model to Entity
         fun fromScheduleItem(scheduleItem: ScheduleItem): ScheduleEntity {
@@ -32,8 +34,11 @@ data class ScheduleEntity(
                 timeRange = scheduleItem.timeRange,
                 frequency = scheduleItem.frequency,
                 deviceId = scheduleItem.deviceId,
+                grade = scheduleItem.grade, // Pass grade
                 isOn = scheduleItem.isOn
             )
         }
     }
 }
+
+
