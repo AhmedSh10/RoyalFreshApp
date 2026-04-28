@@ -10,15 +10,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.royalfreshapp.R // Import R from your actual project package
+import com.example.royalfreshapp.R
 import com.example.royalfreshapp.navigation.Routes
-import com.example.royalfreshapp.ui.theme.RoyalFreshTheme // Assuming Theme.kt exists
+import com.example.royalfreshapp.ui.theme.RoyalFreshTheme
 
 // Preference key
 const val PREFS_NAME = "RoyalFreshPrefs"
@@ -27,7 +28,7 @@ const val KEY_PASSWORD_ENTERED = "password_entered"
 @Composable
 fun PasswordScreen(
     navController: NavController,
-    onPasswordCorrect: () -> Unit // Callback when password is correct
+    onPasswordCorrect: () -> Unit
 ) {
     var password by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
@@ -46,18 +47,18 @@ fun PasswordScreen(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo),
-                contentDescription = "Royal Fresh Logo", // English
+                contentDescription = stringResource(R.string.logo_description),
                 modifier = Modifier.size(150.dp).padding(bottom = 32.dp)
             )
-            Text("Please Enter Password", style = MaterialTheme.typography.headlineSmall) // English
+            Text(stringResource(R.string.please_enter_password), style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = password,
-                onValueChange = { 
+                onValueChange = {
                     password = it
-                    showError = false // Hide error when user types
-                 },
-                label = { Text("Password") }, // English
+                    showError = false
+                },
+                label = { Text(stringResource(R.string.password)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -66,7 +67,7 @@ fun PasswordScreen(
             )
             if (showError) {
                 Text(
-                    text = "Incorrect Password", // English
+                    text = stringResource(R.string.incorrect_password),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp)
@@ -75,30 +76,28 @@ fun PasswordScreen(
             Spacer(modifier = Modifier.height(24.dp))
             Button(onClick = {
                 if (password == correctPassword) {
-                    // Save the flag indicating password was entered correctly
                     val sharedPref = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    with (sharedPref.edit()) {
+                    with(sharedPref.edit()) {
                         putBoolean(KEY_PASSWORD_ENTERED, true)
                         apply()
                     }
-                    // Trigger the callback
                     onPasswordCorrect()
-                    println("Password Correct! Navigating...") // Log for debugging
+                    println("Password Correct! Navigating...")
                 } else {
                     showError = true
                 }
             }) {
-                Text("Login") // English
+                Text(stringResource(R.string.login))
             }
         }
     }
 }
 
-// --- Preview --- 
+// --- Preview ---
 @Preview(showBackground = true)
 @Composable
 fun PasswordScreenPreview() {
     RoyalFreshTheme {
-        PasswordScreen(navController = rememberNavController(), onPasswordCorrect = {}) // Pass dummy NavController and callback
+        PasswordScreen(navController = rememberNavController(), onPasswordCorrect = {})
     }
 }

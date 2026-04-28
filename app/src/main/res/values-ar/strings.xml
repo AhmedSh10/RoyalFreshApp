@@ -1,0 +1,72 @@
+<resources>
+    <string name="app_name">رويال فريش</string>
+
+    <!-- Splash Screen -->
+    <string name="logo_description">شعار رويال فريش</string>
+
+    <!-- Password Screen -->
+    <string name="please_enter_password">الرجاء إدخال كلمة المرور</string>
+    <string name="password">كلمة المرور</string>
+    <string name="incorrect_password">كلمة المرور غير صحيحة</string>
+    <string name="login">تسجيل الدخول</string>
+
+    <!-- Devices Screen -->
+    <string name="available_devices">الأجهزة المتاحة</string>
+    <string name="refresh_devices">تحديث الأجهزة</string>
+    <string name="idle">خامل</string>
+    <string name="connected">متصل</string>
+    <string name="error">خطأ</string>
+    <string name="select_device_to_connect">اختر جهازًا للاتصال</string>
+    <string name="connected_to">متصل بـ %1$s</string>
+    <string name="scanning_for_paired_devices">جارٍ البحث عن الأجهزة المقترنة\u2026</string>
+    <string name="connecting_to">جارٍ الاتصال بـ %1$s\u2026</string>
+    <string name="error_with_message">خطأ - %1$s</string>
+    <string name="error_check_permissions">تحقق من الأذونات أو البلوتوث</string>
+    <string name="scanning">جارٍ البحث\u2026</string>
+    <string name="no_paired_devices">لم يتم العثور على أجهزة مقترنة.\nتأكد من إقران جهاز HC-05 في إعدادات البلوتوث أولاً، ثم اضغط تحديث.</string>
+    <string name="next">التالي</string>
+    <string name="bluetooth_device">جهاز بلوتوث</string>
+    <string name="connected_successfully_to">تم الاتصال بنجاح بـ %1$s</string>
+
+    <!-- Schedule Screen -->
+    <string name="schedule">الجدول الزمني</string>
+    <string name="back">رجوع</string>
+    <string name="add_schedule">إضافة جدول</string>
+    <string name="device_timing">توقيت الجهاز</string>
+    <string name="no_schedules_yet">لا توجد جداول بعد. اضغط + لإضافة واحد.</string>
+    <string name="device_turned_off">تم إيقاف الجهاز</string>
+    <string name="another_timer_active">يوجد مؤقت آخر نشط بالفعل. يرجى إيقافه أولاً.</string>
+    <string name="data_sent_successfully">تم إرسال البيانات بنجاح!</string>
+    <string name="bluetooth_not_connected">البلوتوث غير متصل</string>
+    <string name="confirm_deletion">تأكيد الحذف</string>
+    <string name="confirm_deletion_message">هل أنت متأكد أنك تريد حذف هذا الجدول؟</string>
+    <string name="delete">حذف</string>
+    <string name="cancel">إلغاء</string>
+    <string name="delete_icon">حذف</string>
+    <string name="edit_icon">تعديل</string>
+    <string name="on_label">تشغيل</string>
+    <string name="off_label">إيقاف</string>
+
+    <!-- Add Schedule Screen -->
+    <string name="start_time">وقت البدء</string>
+    <string name="end_time">وقت الانتهاء</string>
+    <string name="grade">الدرجة</string>
+    <string name="save">حفظ</string>
+
+    <!-- Edit Schedule Screen -->
+    <string name="edit_schedule">تعديل الجدول</string>
+    <string name="save_changes">حفظ التغييرات</string>
+
+    <!-- Days -->
+    <string name="day_sun">أحد</string>
+    <string name="day_mon">إثنين</string>
+    <string name="day_tue">ثلاثاء</string>
+    <string name="day_wed">أربعاء</string>
+    <string name="day_thu">خميس</string>
+    <string name="day_fri">جمعة</string>
+    <string name="day_sat">سبت</string>
+    <string name="every_day">كل يوم</string>
+
+    <!-- Navigation -->
+    <string name="schedule_not_found">الجدول غير موجود</string>
+</resources>

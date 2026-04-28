@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.royalfreshapp.R
 import com.example.royalfreshapp.bluetooth.BluetoothViewModel
 import com.example.royalfreshapp.bluetooth.BluetoothStatus
 import com.example.royalfreshapp.ui.screens.*
@@ -75,21 +77,17 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
             CircularProgressIndicator()
         }
         Log.d(TAG, "AppNavigation: startDestination is null, showing loading indicator.")
-        return // Exit composition until startDestination is set
+        return
     }
 
     NavHost(navController = navController, startDestination = startDestination!!) {
         composable(Routes.SPLASH) {
-            // Splash screen now needs to know where to navigate *after* its delay
-            SplashScreen { // Pass a lambda to execute after delay
+            SplashScreen {
                 val sharedPref = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 val passwordEntered = sharedPref.getBoolean(KEY_PASSWORD_ENTERED, false)
                 Log.d(TAG, "AppNavigation: SplashScreen finished. passwordEntered = $passwordEntered")
 
-                // If password is entered, check connection status
                 if (passwordEntered) {
-                    // If we're already connected, go directly to schedule screen
-                    // Otherwise, go to devices screen to establish connection
                     val destination = if (connectionStatus == BluetoothStatus.CONNECTED) {
                         Log.d(TAG, "AppNavigation: Navigating to SCHEDULE_SCREEN (already connected).")
                         Routes.SCHEDULE_SCREEN
@@ -101,7 +99,6 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
                     }
                 } else {
-                    // Password not entered yet, go to password screen
                     Log.d(TAG, "AppNavigation: Navigating to PASSWORD (password not entered).")
                     navController.navigate(Routes.PASSWORD) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
@@ -113,8 +110,6 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
         composable(Routes.PASSWORD) {
             PasswordScreen(navController = navController) {
                 Log.d(TAG, "AppNavigation: PasswordScreen successful.")
-                // This lambda is called when password is correct
-                // Check if we already have a connection
                 if (connectionStatus == BluetoothStatus.CONNECTED) {
                     Log.d(TAG, "AppNavigation: Navigating to SCHEDULE_SCREEN (password correct, already connected).")
                     navController.navigate(Routes.SCHEDULE_SCREEN) {
@@ -141,24 +136,21 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
             ScheduleScreen(
                 navController = navController,
                 scheduleItems = schedules,
-                bluetoothViewModel = bluetoothViewModel, // Pass the BluetoothViewModel
+                bluetoothViewModel = bluetoothViewModel,
                 onAddScheduleClick = {
                     Log.d(TAG, "AppNavigation: Navigating to ADD_SCHEDULE_SCREEN.")
                     navController.navigate(Routes.ADD_SCHEDULE_SCREEN)
                 },
                 onEditSchedule = { scheduleItem ->
                     Log.d(TAG, "AppNavigation: Navigating to EDIT_SCHEDULE_SCREEN for item ${scheduleItem.id}.")
-                    // Navigate to edit screen with schedule ID
                     navController.navigate("edit_schedule_screen/${scheduleItem.id}")
                 },
                 onDeleteSchedule = { scheduleItem ->
                     Log.d(TAG, "AppNavigation: Deleting schedule item ${scheduleItem.id}.")
-                    // Delete the schedule
                     scheduleViewModel.delete(scheduleItem)
                 },
                 onToggleChange = { scheduleItem, isOn ->
                     Log.d(TAG, "AppNavigation: Toggling schedule item ${scheduleItem.id} to $isOn.")
-                    // Update toggle state
                     scheduleViewModel.updateToggleState(scheduleItem, isOn)
                 }
             )
@@ -170,7 +162,6 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
                 navController = navController,
                 onSaveSchedule = { newSchedule ->
                     Log.d(TAG, "AppNavigation: Saving new schedule item ${newSchedule.id}.")
-                    // Add the new schedule to database
                     scheduleViewModel.insert(newSchedule)
                     navController.navigate(Routes.SCHEDULE_SCREEN) { popUpTo(Routes.SCHEDULE_SCREEN) { inclusive = true } }
                 }
@@ -192,18 +183,14 @@ fun AppNavigation(bluetoothViewModel: BluetoothViewModel) {
                     scheduleToEdit = scheduleToEdit,
                     onSaveSchedule = { updatedSchedule ->
                         Log.d(TAG, "AppNavigation: Updating schedule item ${updatedSchedule.id}.")
-                        // Update the schedule in database
                         scheduleViewModel.update(updatedSchedule)
                         navController.navigate(Routes.SCHEDULE_SCREEN) { popUpTo(Routes.SCHEDULE_SCREEN) { inclusive = true } }
                     }
                 )
             } else {
                 Log.e(TAG, "AppNavigation: Schedule item with ID $scheduleId not found for editing.")
-                Text("Schedule not found")
+                Text(stringResource(R.string.schedule_not_found))
             }
         }
     }
 }
-
-
-

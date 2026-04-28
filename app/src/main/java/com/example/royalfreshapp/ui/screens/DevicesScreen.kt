@@ -18,10 +18,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.royalfreshapp.R
 import com.example.royalfreshapp.bluetooth.BluetoothStatus
 import com.example.royalfreshapp.bluetooth.BluetoothViewModel
 import com.example.royalfreshapp.navigation.Routes
@@ -40,6 +43,7 @@ fun DevicesScreen(
     val availableDevices by viewModel.availableDevices.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val connectedDeviceName by viewModel.connectedDeviceName.collectAsState()
+    val context = LocalContext.current
 
     // Effect to initialize Bluetooth when the screen is first composed
     LaunchedEffect(key1 = Unit) {
@@ -54,25 +58,19 @@ fun DevicesScreen(
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
             Log.e(TAG, "DevicesScreen: Showing error snackbar: $it")
-//            snackbarHostState.showSnackbar(
-//                message = it,
-//                duration = SnackbarDuration.Short
-//            )
-
             Toast.makeText(navController.context, it, Toast.LENGTH_SHORT).show()
-
         }
     }
+
+    // String resources for Toast (need to be read in composable scope)
+    val connectedSuccessfullyStr = stringResource(R.string.connected_successfully_to)
 
     // Show connection success message
     LaunchedEffect(connectionStatus) {
         if (connectionStatus == BluetoothStatus.CONNECTED) {
-            val msg = "Connected successfully to ${connectedDeviceName ?: "device"}"
+            val deviceName = connectedDeviceName ?: "device"
+            val msg = String.format(connectedSuccessfullyStr, deviceName)
             Log.d(TAG, "DevicesScreen: Showing success snackbar: $msg")
-//            snackbarHostState.showSnackbar(
-//                message = msg,
-//                duration = SnackbarDuration.Short
-//            )
             Toast.makeText(navController.context, msg, Toast.LENGTH_SHORT).show()
         }
     }
@@ -81,7 +79,7 @@ fun DevicesScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Available Devices") },
+                title = { Text(stringResource(R.string.available_devices)) },
                 actions = {
                     IconButton(
                         onClick = {
@@ -91,7 +89,7 @@ fun DevicesScreen(
                         enabled = connectionStatus != BluetoothStatus.SCANNING &&
                                 connectionStatus != BluetoothStatus.CONNECTING
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Devices")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh_devices))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -116,7 +114,7 @@ fun DevicesScreen(
                 when (connectionStatus) {
                     BluetoothStatus.IDLE -> Icon(
                         Icons.Default.Settings,
-                        contentDescription = "Idle",
+                        contentDescription = stringResource(R.string.idle),
                         tint = LocalContentColor.current.copy(alpha = 0.6f)
                     )
                     BluetoothStatus.SCANNING -> {
@@ -131,12 +129,12 @@ fun DevicesScreen(
                     )
                     BluetoothStatus.CONNECTED -> Icon(
                         Icons.Default.Check,
-                        contentDescription = "Connected",
-                        tint = Color(0xFF00C853) // Green color for connected
+                        contentDescription = stringResource(R.string.connected),
+                        tint = Color(0xFF00C853)
                     )
                     BluetoothStatus.ERROR -> Icon(
                         Icons.Default.Warning,
-                        contentDescription = "Error",
+                        contentDescription = stringResource(R.string.error),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -144,13 +142,13 @@ fun DevicesScreen(
                 Text(
                     text = when (connectionStatus) {
                         BluetoothStatus.IDLE -> if (connectedDeviceName != null)
-                            "Connected to $connectedDeviceName"
+                            stringResource(R.string.connected_to, connectedDeviceName!!)
                         else
-                            "Select a device to connect"
-                        BluetoothStatus.SCANNING -> "Scanning for paired devices..."
-                        BluetoothStatus.CONNECTING -> "Connecting to ${connectedDeviceName ?: "device"}..."
-                        BluetoothStatus.CONNECTED -> "Connected to ${connectedDeviceName ?: "device"}"
-                        BluetoothStatus.ERROR -> "Error - ${errorMessage ?: "Check permissions or Bluetooth"}"
+                            stringResource(R.string.select_device_to_connect)
+                        BluetoothStatus.SCANNING -> stringResource(R.string.scanning_for_paired_devices)
+                        BluetoothStatus.CONNECTING -> stringResource(R.string.connecting_to, connectedDeviceName ?: "device")
+                        BluetoothStatus.CONNECTED -> stringResource(R.string.connected_to, connectedDeviceName ?: "device")
+                        BluetoothStatus.ERROR -> stringResource(R.string.error_with_message, errorMessage ?: stringResource(R.string.error_check_permissions))
                     },
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center
@@ -161,17 +159,15 @@ fun DevicesScreen(
 
             // Device List
             if (connectionStatus == BluetoothStatus.SCANNING && availableDevices.isEmpty()) {
-                // Show progress indicator centered while scanning initially
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
-                    Text("Scanning...", modifier = Modifier.padding(top = 60.dp))
+                    Text(stringResource(R.string.scanning), modifier = Modifier.padding(top = 60.dp))
                 }
                 Log.d(TAG, "DevicesScreen: Showing scanning indicator.")
             } else if (availableDevices.isEmpty() && connectionStatus != BluetoothStatus.SCANNING) {
-                // Show message if no devices found and not scanning
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "No paired devices found.\nMake sure to pair your HC-05 device in Bluetooth settings first, then press refresh.",
+                        text = stringResource(R.string.no_paired_devices),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium
@@ -179,7 +175,6 @@ fun DevicesScreen(
                 }
                 Log.d(TAG, "DevicesScreen: No paired devices found.")
             } else {
-                // Show the list of devices
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(availableDevices) { device ->
                         DeviceItem(
@@ -206,13 +201,12 @@ fun DevicesScreen(
                     onClick = {
                         Log.d(TAG, "DevicesScreen: Next button clicked, navigating to ScheduleScreen.")
                         navController.navigate(Routes.SCHEDULE_SCREEN)
-
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp)
                 ) {
-                    Text("Next")
+                    Text(stringResource(R.string.next))
                 }
             }
         }
@@ -240,7 +234,7 @@ fun DeviceItem(
         ) {
             Icon(
                 Icons.Default.Info,
-                contentDescription = "Bluetooth Device",
+                contentDescription = stringResource(R.string.bluetooth_device),
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -257,5 +251,3 @@ fun DeviceItem(
         }
     }
 }
-
-

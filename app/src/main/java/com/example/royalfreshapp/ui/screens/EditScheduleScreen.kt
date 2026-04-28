@@ -16,12 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import android.app.TimePickerDialog
+import com.example.royalfreshapp.R
 import com.example.royalfreshapp.utils.DaySelectionButton
 import com.example.royalfreshapp.utils.GradeSelectionItem
 import java.text.SimpleDateFormat
@@ -34,6 +36,20 @@ fun EditScheduleScreen(
     onSaveSchedule: (ScheduleItem) -> Unit,
     scheduleToEdit: ScheduleItem
 ) {
+    // Day keys (used for data storage - always English)
+    val dayKeys = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+
+    // Day display labels (localized)
+    val dayLabels = listOf(
+        stringResource(R.string.day_sun),
+        stringResource(R.string.day_mon),
+        stringResource(R.string.day_tue),
+        stringResource(R.string.day_wed),
+        stringResource(R.string.day_thu),
+        stringResource(R.string.day_fri),
+        stringResource(R.string.day_sat)
+    )
+
     // State for start and end times
     var startTime by remember { mutableStateOf(scheduleToEdit.timeRange.split("-")[0].trim()) }
     var endTime by remember { mutableStateOf(scheduleToEdit.timeRange.split("-")[1].trim()) }
@@ -74,13 +90,12 @@ fun EditScheduleScreen(
         false
     )
 
-    // State for selected days
-    val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-    val selectedDays = remember {
+    // State for selected days (store day keys for data)
+    val selectedDayKeys = remember {
         mutableStateListOf<String>().apply {
             val frequency = scheduleToEdit.frequency
             if (frequency == "Every day") {
-                addAll(days)
+                addAll(dayKeys)
             } else {
                 addAll(frequency.split(", "))
             }
@@ -93,7 +108,7 @@ fun EditScheduleScreen(
     // Validation state
     val isStartTimeSelected = startTime.isNotEmpty()
     val isEndTimeSelected = endTime.isNotEmpty()
-    val isDaySelected = selectedDays.isNotEmpty()
+    val isDaySelected = selectedDayKeys.isNotEmpty()
     val isGradeSelected = selectedGrade.isNotEmpty()
 
     // Combined validation state
@@ -108,7 +123,7 @@ fun EditScheduleScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Edit Schedule",
+                            text = stringResource(R.string.edit_schedule),
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -118,12 +133,12 @@ fun EditScheduleScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFE91E63), // Pink color from the image
+                    containerColor = Color(0xFFE91E63),
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White
                 )
@@ -152,7 +167,7 @@ fun EditScheduleScreen(
                         .clickable { startTimePicker.show() }
                 ) {
                     Text(
-                        text = "Start Time",
+                        text = stringResource(R.string.start_time),
                         fontSize = 18.sp,
                         color = Color.Gray
                     )
@@ -172,7 +187,7 @@ fun EditScheduleScreen(
                         .clickable { endTimePicker.show() }
                 ) {
                     Text(
-                        text = "End Time",
+                        text = stringResource(R.string.end_time),
                         fontSize = 18.sp,
                         color = Color.Gray,
                         textAlign = TextAlign.End,
@@ -197,28 +212,28 @@ fun EditScheduleScreen(
                     .padding(vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                days.forEach { day ->
-                    val isSelected = selectedDays.contains(day)
+                dayKeys.forEachIndexed { index, dayKey ->
+                    val isSelected = selectedDayKeys.contains(dayKey)
                     DaySelectionButton(
-                        day = day,
+                        day = dayLabels[index],
                         isSelected = isSelected,
                         onClick = {
                             if (isSelected) {
-                                selectedDays.remove(day)
+                                selectedDayKeys.remove(dayKey)
                             } else {
-                                selectedDays.add(day)
+                                selectedDayKeys.add(dayKey)
                             }
                         }
                     )
                 }
             }
 
-            // Placeholder for the clock (to be ignored as per instructions)
+            // Placeholder for the clock
             Spacer(modifier = Modifier.height(200.dp))
 
             // Grade selection
             Text(
-                text = "Grade",
+                text = stringResource(R.string.grade),
                 fontSize = 20.sp,
                 color = Color.Gray,
                 modifier = Modifier
@@ -242,15 +257,14 @@ fun EditScheduleScreen(
             // Save button
             Button(
                 onClick = {
-                    // Create an updated schedule item with the selected values
                     val timeRange = "$startTime-$endTime"
-                    val frequency = if (selectedDays.size == 7) "Every day" else selectedDays.joinToString(", ")
+                    val frequency = if (selectedDayKeys.size == 7) "Every day" else selectedDayKeys.joinToString(", ")
                     val updatedSchedule = scheduleToEdit.copy(
                         timeRange = timeRange,
                         frequency = frequency,
                         deviceId = selectedGrade,
                         grade = selectedGrade,
-                        isOn = if (scheduleToEdit.isOn) false else scheduleToEdit.isOn // Turn off if it was on
+                        isOn = if (scheduleToEdit.isOn) false else scheduleToEdit.isOn
                     )
                     onSaveSchedule(updatedSchedule)
                 },
@@ -266,7 +280,7 @@ fun EditScheduleScreen(
                 enabled = isFormValid
             ) {
                 Text(
-                    text = "Save Changes",
+                    text = stringResource(R.string.save_changes),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -274,57 +288,3 @@ fun EditScheduleScreen(
         }
     }
 }
-
-//@Composable
-//fun DaySelectionButton(
-//    day: String,
-//    isSelected: Boolean,
-//    onClick: () -> Unit
-//) {
-//    Box(
-//        modifier = Modifier
-//            .clip(RoundedCornerShape(50))
-//            .background(
-//                if (isSelected) Color(0xFFE91E63).copy(alpha = 0.1f)
-//                else Color(0xFFF5F5F5)
-//            )
-//            .border(
-//                width = if (isSelected) 1.dp else 0.dp,
-//                color = if (isSelected) Color(0xFFE91E63) else Color.Transparent,
-//                shape = RoundedCornerShape(50)
-//            )
-//            .clickable(onClick = onClick)
-//            .padding(horizontal = 8.dp, vertical = 12.dp),
-//        contentAlignment = Alignment.Center
-//    ) {
-//        Text(
-//            text = day,
-//            color = if (isSelected) Color(0xFFE91E63) else Color.Black,
-//            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-//        )
-//    }
-//}
-//
-//@Composable
-//fun GradeSelectionItem(
-//    grade: String,
-//    isSelected: Boolean,
-//    onClick: () -> Unit
-//) {
-//    Box(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .clickable(onClick = onClick)
-//            .padding(vertical = 12.dp),
-//        contentAlignment = Alignment.Center
-//    ) {
-//        Text(
-//            text = grade,
-//            fontSize = 24.sp,
-//            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-//            color = if (isSelected) Color(0xFFE91E63) else Color.Gray
-//        )
-//    }
-//}
-
-
