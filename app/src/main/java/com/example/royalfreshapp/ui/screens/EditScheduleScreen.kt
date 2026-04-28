@@ -25,7 +25,7 @@ import androidx.navigation.NavController
 import android.app.TimePickerDialog
 import com.example.royalfreshapp.R
 import com.example.royalfreshapp.utils.DaySelectionButton
-import com.example.royalfreshapp.utils.GradeSelectionItem
+import com.example.royalfreshapp.utils.TimeSlider
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -91,7 +91,7 @@ fun EditScheduleScreen(
     )
 
     // State for selected days (store day keys for data)
-    val selectedDayKeys = remember {
+    val selectedDays = remember {
         mutableStateListOf<String>().apply {
             val frequency = scheduleToEdit.frequency
             if (frequency == "Every day") {
@@ -102,17 +102,17 @@ fun EditScheduleScreen(
         }
     }
 
-    // State for selected grade
-    var selectedGrade by remember { mutableStateOf(scheduleToEdit.grade) }
+    // State for working time and pause time
+    var workingTime by remember { mutableStateOf(scheduleToEdit.workingTime) }
+    var pauseTime by remember { mutableStateOf(scheduleToEdit.pauseTime) }
 
     // Validation state
     val isStartTimeSelected = startTime.isNotEmpty()
     val isEndTimeSelected = endTime.isNotEmpty()
-    val isDaySelected = selectedDayKeys.isNotEmpty()
-    val isGradeSelected = selectedGrade.isNotEmpty()
+    val isDaySelected = selectedDays.isNotEmpty()
 
     // Combined validation state
-    val isFormValid = isStartTimeSelected && isEndTimeSelected && isDaySelected && isGradeSelected
+    val isFormValid = isStartTimeSelected && isEndTimeSelected && isDaySelected
 
     Scaffold(
         topBar = {
@@ -213,15 +213,15 @@ fun EditScheduleScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 dayKeys.forEachIndexed { index, dayKey ->
-                    val isSelected = selectedDayKeys.contains(dayKey)
+                    val isSelected = selectedDays.contains(dayKey)
                     DaySelectionButton(
                         day = dayLabels[index],
                         isSelected = isSelected,
                         onClick = {
                             if (isSelected) {
-                                selectedDayKeys.remove(dayKey)
+                                selectedDays.remove(dayKey)
                             } else {
-                                selectedDayKeys.add(dayKey)
+                                selectedDays.add(dayKey)
                             }
                         }
                     )
@@ -231,39 +231,37 @@ fun EditScheduleScreen(
             // Placeholder for the clock
             Spacer(modifier = Modifier.height(200.dp))
 
-            // Grade selection
-            Text(
-                text = stringResource(R.string.grade),
-                fontSize = 20.sp,
-                color = Color.Gray,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(vertical = 16.dp)
+            // Working Time Slider
+            TimeSlider(
+                label = stringResource(R.string.working_time_label),
+                value = workingTime,
+                range = 5f..360f,
+                steps = (360 - 5) / 5 - 1,
+                onValueChange = { workingTime = it },
+                valueText = "${workingTime}s"
             )
 
-            // Grade options
-            LazyColumn(
-                modifier = Modifier.weight(1f)
-            ) {
-                items((1..10).map { "G$it" }) { grade ->
-                    GradeSelectionItem(
-                        grade = grade,
-                        isSelected = selectedGrade == grade,
-                        onClick = { selectedGrade = grade }
-                    )
-                }
-            }
+            // Pause Time Slider
+            TimeSlider(
+                label = stringResource(R.string.pause_time_label),
+                value = pauseTime,
+                range = 10f..180f,
+                steps = (180 - 10) / 10 - 1,
+                onValueChange = { pauseTime = it },
+                valueText = "${pauseTime}s"
+            )
 
             // Save button
             Button(
                 onClick = {
                     val timeRange = "$startTime-$endTime"
-                    val frequency = if (selectedDayKeys.size == 7) "Every day" else selectedDayKeys.joinToString(", ")
+                    val frequency = if (selectedDays.size == 7) "Every day" else selectedDays.joinToString(", ")
                     val updatedSchedule = scheduleToEdit.copy(
                         timeRange = timeRange,
                         frequency = frequency,
-                        deviceId = selectedGrade,
-                        grade = selectedGrade,
+                        deviceId = "${workingTime}s-${pauseTime}s",
+                        workingTime = workingTime,
+                        pauseTime = pauseTime,
                         isOn = if (scheduleToEdit.isOn) false else scheduleToEdit.isOn
                     )
                     onSaveSchedule(updatedSchedule)

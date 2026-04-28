@@ -54,7 +54,8 @@ data class ScheduleItem(
     val timeRange: String,
     val frequency: String,
     val deviceId: String,
-    val grade: String,
+    val workingTime: Int,
+    val pauseTime: Int,
     val isOn: Boolean = false
 )
 
@@ -77,6 +78,8 @@ fun ScheduleScreen(
     val anotherTimerActiveStr = stringResource(R.string.another_timer_active)
     val dataSentSuccessfullyStr = stringResource(R.string.data_sent_successfully)
     val bluetoothNotConnectedStr = stringResource(R.string.bluetooth_not_connected)
+    val workingStr = stringResource(R.string.working_label)
+    val pauseStr = stringResource(R.string.pause_label)
 
     Scaffold(
         topBar = {
@@ -169,6 +172,8 @@ fun ScheduleScreen(
                     items(scheduleItems) { item ->
                         CustomSwipeableCard(
                             scheduleItem = item,
+                            workingLabel = workingStr,
+                            pauseLabel = pauseStr,
                             onToggleChange = {
                                 if (isBluetoothConnected) {
                                     if (item.isOn) {
@@ -185,7 +190,7 @@ fun ScheduleScreen(
                                             Log.d(TAG, "Attempted to turn ON schedule item ${item.id}, but another card is already ON.")
                                         } else {
                                             // If OFF and no other card is ON, send full card data
-                                            val dataToSend = "${item.timeRange}|${item.frequency}|${item.deviceId}|${item.grade}"
+                                            val dataToSend = "${item.timeRange}|${item.frequency}|${item.workingTime}|${item.pauseTime}"
                                             bluetoothViewModel.write(dataToSend)
                                             Toast.makeText(context, dataSentSuccessfullyStr, Toast.LENGTH_SHORT).show()
                                             onToggleChange(item, true)
@@ -214,6 +219,8 @@ fun ScheduleScreen(
 @Composable
 fun CustomSwipeableCard(
     scheduleItem: ScheduleItem,
+    workingLabel: String,
+    pauseLabel: String,
     onToggleChange: (Boolean) -> Unit,
     onEditSchedule: () -> Unit,
     onDeleteSchedule: () -> Unit
@@ -268,7 +275,7 @@ fun CustomSwipeableCard(
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(deleteBackgroundAlpha)
-                .background(Color.Red)
+                .background(Color(0xFFF44336))
                 .padding(horizontal = 20.dp)
                 .zIndex(1f),
             contentAlignment = Alignment.CenterEnd
@@ -356,7 +363,7 @@ fun CustomSwipeableCard(
                             maxLines = 1
                         )
                         Text(
-                            text = scheduleItem.deviceId,
+                            text = "$workingLabel: ${scheduleItem.workingTime}s, $pauseLabel: ${scheduleItem.pauseTime}s",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 8.dp),
@@ -409,8 +416,9 @@ fun ScheduleScreenPreview() {
                     id = 1,
                     timeRange = "08:00 - 10:00",
                     frequency = "Daily",
-                    deviceId = "Device123",
-                    grade = "A",
+                    deviceId = "60s-20s",
+                    workingTime = 60,
+                    pauseTime = 20,
                     isOn = false
                 )
             ),

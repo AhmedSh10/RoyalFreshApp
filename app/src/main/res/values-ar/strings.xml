@@ -1,15 +1,12 @@
 <resources>
     <string name="app_name">رويال فريش</string>
-
     <!-- Splash Screen -->
     <string name="logo_description">شعار رويال فريش</string>
-
     <!-- Password Screen -->
     <string name="please_enter_password">الرجاء إدخال كلمة المرور</string>
     <string name="password">كلمة المرور</string>
     <string name="incorrect_password">كلمة المرور غير صحيحة</string>
     <string name="login">تسجيل الدخول</string>
-
     <!-- Devices Screen -->
     <string name="available_devices">الأجهزة المتاحة</string>
     <string name="refresh_devices">تحديث الأجهزة</string>
@@ -27,7 +24,6 @@
     <string name="next">التالي</string>
     <string name="bluetooth_device">جهاز بلوتوث</string>
     <string name="connected_successfully_to">تم الاتصال بنجاح بـ %1$s</string>
-
     <!-- Schedule Screen -->
     <string name="schedule">الجدول الزمني</string>
     <string name="back">رجوع</string>
@@ -46,17 +42,17 @@
     <string name="edit_icon">تعديل</string>
     <string name="on_label">تشغيل</string>
     <string name="off_label">إيقاف</string>
-
     <!-- Add Schedule Screen -->
     <string name="start_time">وقت البدء</string>
     <string name="end_time">وقت الانتهاء</string>
-    <string name="grade">الدرجة</string>
+    <string name="working_time_label">وقت التشغيل (ثانية)</string>
+    <string name="pause_time_label">وقت الإيقاف (ثانية)</string>
+    <string name="working_label">تشغيل</string>
+    <string name="pause_label">إيقاف</string>
     <string name="save">حفظ</string>
-
     <!-- Edit Schedule Screen -->
     <string name="edit_schedule">تعديل الجدول</string>
     <string name="save_changes">حفظ التغييرات</string>
-
     <!-- Days -->
     <string name="day_sun">أحد</string>
     <string name="day_mon">إثنين</string>
@@ -66,7 +62,6 @@
     <string name="day_fri">جمعة</string>
     <string name="day_sat">سبت</string>
     <string name="every_day">كل يوم</string>
-
     <!-- Navigation -->
     <string name="schedule_not_found">الجدول غير موجود</string>
 </resources>
